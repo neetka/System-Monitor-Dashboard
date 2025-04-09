@@ -1,73 +1,55 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const si = require('systeminformation');
-const ps = require('ps-node');
-const kill = require('tree-kill'); // For killing processes
+const os = require('os');
+const { exec } = require('child_process');
+const cors = require('cors'); // Add this line
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+const port = 3000;
+
+// Enable CORS
+app.use(cors());
+app.use(express.json());
+
+app.get('/system-stats', (req, res) => {
+  const cpuUsage = os.loadavg()[0] * 100 / os.cpus().length;
+  const totalMem = os.totalmem() / (1024 * 1024 * 1024); // Convert to GB
+  const freeMem = os.freemem() / (1024 * 1024 * 1024); // Convert to GB
+  res.json({
+    cpu: cpuUsage.toFixed(2),
+    memory: { 
+      total: totalMem.toFixed(2), 
+      used: (totalMem - freeMem).toFixed(2),
+      free: freeMem.toFixed(2)
     }
+  });
 });
 
-const port = process.env.PORT || 4000;
-
-app.use(express.static('public'));
-app.use(express.json()); // Middleware to parse JSON bodies
-
-io.on('connection', (socket) => {
-    console.log('Client connected');
-
-    const sendSystemData = async () => {
-        try {
-            const cpuData = await si.currentLoad();
-            const memData = await si.mem();
-            const processes = await si.processes();
-            const currentTime = new Date().toLocaleTimeString();
-
-            socket.emit('systemData', {
-                cpu: cpuData,
-                memory: memData,
-                processes: processes.list.slice(0, 5), // Limit to top 5 processes
-                time: currentTime
-            });
-        } catch (error) {
-            console.error('Error fetching system data:', error);
-        }
-    };
-
-    // Send system data every 1 second
-    setInterval(sendSystemData, 1000);
-
-    socket.on('killProcess', (pid) => {
-        console.log(`Attempting to kill process with PID: ${pid}`);
-        try {
-            kill(pid, 'SIGKILL', (err) => {
-                if (err) {
-                    console.error(`Failed to kill process ${pid}:`, err);
-                    socket.emit('killError', { pid: pid, error: err.message });
-                } else {
-                    console.log(`Process ${pid} killed successfully.`);
-                    socket.emit('killSuccess', { pid: pid });
-                    // Optionally, refresh process list after killing
-                    sendSystemData();
-                }
-            });
-        } catch (e) {
-            console.error(`Error killing process ${pid}:`, e);
-            socket.emit('killError', { pid: pid, error: e.message });
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('Client disconnected');
-    });
+app.get('/processes', (req, res) => {
+  exec('tasklist /fo csv', (err, stdout) => {
+    if (err) return res.status(500).send('Error fetching processes');
+    
+    const processes = stdout.split('\r\n')
+      .slice(1)
+      .filter(line => line.trim())
+      .map(line => {
+        const parts = line.split('","');
+        return {
+          name: parts[0]?.replace(/"/g, ''),
+          pid: parts[1]?.replace(/"/g, ''),
+          memory: parts[4]?.replace(/"/g, '')
+        };
+      })
+      .filter(p => p.name && p.pid);
+      
+    res.json(processes);
+  });
 });
 
-server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+app.post('/kill/:pid', (req, res) => {
+  exec(`taskkill /PID ${req.params.pid} /F`, (err) => {
+    if (err) return res.status(500).send('Error killing process');
+    res.send('Process terminated');
+  });
 });
+
+app.listen(port, () => console.log(`Server running on port ${port}`));

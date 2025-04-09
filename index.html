@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced System Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      overflow-x: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: #ffca3a;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    #theme-toggle, #export-btn, #auto-refresh-btn {
+      background: #0f3460;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #theme-toggle:hover, #export-btn:hover, #auto-refresh-btn:hover {
+      background: #1b4d7e;
+    }
+
+    #refresh-interval {
+      width: 100px;
+      margin-left: 10px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .section {
+      background: #16213e;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+      color: #00d4ff;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 200px;
+      width: 100%;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .cpu-stats, .memory-stats {
+      margin-top: 10px;
+      font-size: 1.2rem;
+      color: #ffca3a;
+    }
+
+    .memory-gauge {
+      width: 150px;
+      height: 150px;
+      margin: 20px auto;
+      position: relative;
+    }
+
+    .gauge-bg, .gauge-fill {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      border-radius: 50%;
+      border: 10px solid #2a4066;
+    }
+
+    .gauge-fill {
+      clip: rect(0, 150px, 150px, 75px);
+      border-color: #00d4ff;
+      transform: rotate(0deg);
+      transition: transform 1s ease;
+    }
+
+    .gauge-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2rem;
+    }
+
+    .process-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .process-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: #1f2a44;
+      margin: 5px 0;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+
+    .process-item:hover {
+      background: #2a4066;
+    }
+
+    .kill-btn {
+      background: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .kill-btn:hover {
+      background: #cc0000;
+    }
+
+    #search-process {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #2a4066;
+      color: white;
+    }
+
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: #16213e;
+      padding: 20px;
+      border-radius: 10px;
+      width: 400px;
+      max-width: 90%;
+      text-align: center;
+      color: #e0e0e0;
+    }
+
+    .modal-content button {
+      margin: 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #confirm-btn {
+      background: #ff4d4d;
+    }
+
+    #cancel-btn {
+      background: #2a4066;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #ff4d4d;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      display: none;
+      z-index: 1000;
+      animation: slideIn 0.5s ease, fadeOut 0.5s ease 3s forwards;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+      header h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+    <div class="container">
+      <header>
+        <h1>Advanced System Monitor</h1>
+        <div class="controls">
+          <button id="theme-toggle">Toggle Light Mode</button>
+          <button id="export-btn">Export Data</button>
+          <button id="auto-refresh-btn">Auto-Refresh: On</button>
+          <input type="range" id="refresh-interval" min="1" max="10" value="2">
+        </div>
+      </header>
+      <div class="dashboard">
+        <div class="section">
+          <h2>Current Time</h2>
+          <p id="current-time" style="color: #ffca3a;">Loading...</p>
+        </div>
+        <div class="section">
+          <h2>CPU Usage</h2>
+          <div class="chart-container">
+            <canvas id="cpuChart"></canvas>
+          </div>
+          <div class="cpu-stats">CPU: <span id="cpu-value">0%</span></div>
+        </div>
+        <div class="section">
+          <h2>Memory Usage</h2>
+          <div class="memory-gauge">
+            <div class="gauge-bg"></div>
+            <div class="gauge-fill" id="gauge-fill"></div>
+            <div class="gauge-text" id="memory-value">0 / 0 GB</div>
+          </div>
+        </div>
+        <div class="section">
+          <h2>Top Processes</h2>
+          <input type="text" id="search-process" placeholder="Search processes...">
+          <div class="process-list" id="process-list"></div>
+        </div>
+      </div>
+    </div>
+    <div id="modal">
+      <div class="modal-content">
+        <h3>Process Details</h3>
+        <p id="modal-pid"></p>
+        <p>CPU History: <span id="cpu-history"></span></p>
+        <p>Memory Trend: <span id="memory-trend"></span></p>
+        <button id="confirm-btn">Kill</button>
+        <button id="cancel-btn">Close</button>
+      </div>
+    </div>
+    <div id="notification" class="notification"></div>
+  
+    <script>
+      let cpuChart, cpuData = Array(30).fill(0);
+      let autoRefresh = true;
+      let refreshInterval = 2000;
+      let refreshIntervalId;
+      let currentPid = null;
+  
+      function initCharts() {
+        cpuChart = new Chart(document.getElementById('cpuChart'), {
+          type: 'line',
+          data: {
+            labels: Array(30).fill(''),
+            datasets: [{ label: 'CPU Usage (%)', data: cpuData, borderColor: '#00d4ff', fill: false }]
+          },
+          options: { scales: { y: { min: 0, max: 100 } }, animation: { duration: 500 } }
+        });
+      }
+  
+      function updateGauge(used, total) {
+        const percentage = (used / total) * 100;
+        document.getElementById('gauge-fill').style.transform = `rotate(${percentage * 1.8}deg)`;
+        document.getElementById('memory-value').textContent = `${used.toFixed(2)} / ${total.toFixed(2)} GB`;
+      }
+  
+      async function fetchData() {
+  try {
+    const [statsRes, procRes] = await Promise.all([
+      fetch('http://localhost:3000/system-stats'),
+      fetch('http://localhost:3000/processes')
+    ]);
+    
+    if (!statsRes.ok || !procRes.ok) throw new Error('Network response was not ok');
+    
+    const stats = await statsRes.json();
+    const processes = await procRes.json();
+
+    // Update CPU display
+    document.getElementById('cpu-value').textContent = `${stats.cpu}%`;
+    cpuData = [...cpuData.slice(1), parseFloat(stats.cpu)];
+    cpuChart.data.datasets[0].data = cpuData;
+    cpuChart.update();
+
+    // Update memory display (already in GB)
+    updateGauge(parseFloat(stats.memory.used), parseFloat(stats.memory.total));
+    document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
+
+    // Update process list
+    const processList = document.getElementById('process-list');
+    processList.innerHTML = processes.map(proc => `
+      <div class="process-item" onclick="showModal('${proc.pid}', ${stats.cpu}, ${stats.memory.used})">
+        <span>${proc.name} (PID: ${proc.pid}) - Mem: ${proc.memory}</span>
+        <button class="kill-btn" onclick="showKillModal('${proc.pid}', event)">Kill</button>
+      </div>
+    `).join('');
+
+    // Notifications
+    if (parseFloat(stats.cpu) > 80) {
+      showNotification(`High CPU Usage: ${stats.cpu}%!`);
+    }
+    if (parseFloat(stats.memory.free) < 1) {
+      showNotification(`Low Memory: Only ${stats.memory.free} GB free!`);
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    showNotification('Error fetching system data!');
+  }
+}
+      function showNotification(message) {
+        const notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.style.display = 'block';
+        setTimeout(() => notification.style.display = 'none', 3500);
+      }
+  
+      function showModal(pid, cpu, memory) {
+        currentPid = pid;
+        document.getElementById('modal-pid').textContent = `PID: ${pid}`;
+        document.getElementById('cpu-history').textContent = `Recent CPU: ${cpu.toFixed(2)}% (simulated)`;
+        document.getElementById('memory-trend').textContent = `Recent Mem: ${memory.toFixed(2)} GB (simulated)`;
+        document.getElementById('modal').style.display = 'flex';
+      }
+  
+      function showKillModal(pid, event) {
+        event.stopPropagation();
+        currentPid = pid;
+        document.getElementById('modal-pid').textContent = `PID: ${pid} - Confirm Kill?`;
+        document.getElementById('cpu-history').textContent = '';
+        document.getElementById('memory-trend').textContent = '';
+        document.getElementById('modal').style.display = 'flex';
+      }
+  
+      document.getElementById('cancel-btn').addEventListener('click', () => {
+        document.getElementById('modal').style.display = 'none';
+        currentPid = null;
+      });
+  
+      document.getElementById('confirm-btn').addEventListener('click', async () => {
+        if (currentPid) {
+          try {
+            await fetch(`http://localhost:3000/kill/${currentPid}`, { method: 'POST' });
+            fetchData();
+            showNotification(`Process ${currentPid} terminated!`);
+          } catch (error) {
+            console.error('Error killing process:', error);
+            showNotification('Error terminating process!');
+          }
+        }
+        document.getElementById('modal').style.display = 'none';
+        currentPid = null;
+      });
+  
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        const body = document.body;
+        const light = '#f0f2f5';
+        const dark = '#1a1a2e';
+        const currentTheme = body.style.background === light ? dark : light;
+        body.style.background = currentTheme;
+        body.style.color = currentTheme === light ? '#333' : '#e0e0e0';
+        document.querySelectorAll('.section').forEach(el => {
+          el.style.background = currentTheme === light ? '#f8f9fa' : '#16213e';
+        });
+        document.getElementById('theme-toggle').textContent = currentTheme === dark ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+      });
+  
+      document.getElementById('auto-refresh-btn').addEventListener('click', () => {
+        autoRefresh = !autoRefresh;
+        document.getElementById('auto-refresh-btn').textContent = `Auto-Refresh: ${autoRefresh ? 'On' : 'Off'}`;
+        if (autoRefresh) {
+          refreshIntervalId = setInterval(fetchData, refreshInterval);
+        } else {
+          clearInterval(refreshIntervalId);
+        }
+      });
+  
+      document.getElementById('refresh-interval').addEventListener('input', (e) => {
+        refreshInterval = e.target.value * 1000;
+        if (autoRefresh) {
+          clearInterval(refreshIntervalId);
+          refreshIntervalId = setInterval(fetchData, refreshInterval);
+        }
+      });
+  
+      document.getElementById('export-btn').addEventListener('click', async () => {
+        const statsRes = await fetch('http://localhost:3000/system-stats');
+        const procRes = await fetch('http://localhost:3000/processes');
+        const stats = await statsRes.json();
+        const processes = await procRes.json();
+        const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify({ stats, processes }, null, 2))}`;
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute('href', dataStr);
+        downloadAnchorNode.setAttribute('download', `system-stats-${new Date().toISOString()}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        document.body.removeChild(downloadAnchorNode);
+      });
+  
+      document.getElementById('search-process').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const processItems = document.querySelectorAll('.process-item');
+        processItems.forEach(item => {
+          const text = item.textContent.toLowerCase();
+          item.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+        });
+      });
+  
+      initCharts();
+      fetchData();
+      refreshIntervalId = setInterval(fetchData, refreshInterval);
+    </script>
+  </body>
+  </html>
+  
