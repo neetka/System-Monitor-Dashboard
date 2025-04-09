@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced System Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1>Advanced System Monitor</h1>
+        </header>
+        
+        <div class="dashboard-grid">
+            <div class="card time-card">
+                <h2>Current Time</h2>
+                <div class="time-display" id="currentTime">Loading...</div>
+            </div>
+            
+            <div class="card cpu-card">
+                <h2>CPU Usage</h2>
+                <div class="gauge-container">
+                    <div class="gauge" id="cpuGauge">
+                        <div class="gauge-body">
+                            <div class="gauge-fill" id="cpuFill"></div>
+                            <div class="gauge-cover">CPU: <span id="cpuPercent">0</span>%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card memory-card">
+                <h2>Memory Usage</h2>
+                <div class="gauge-container">
+                    <div class="gauge" id="memoryGauge">
+                        <div class="gauge-body">
+                            <div class="gauge-fill" id="memoryFill"></div>
+                            <div class="gauge-cover">MEM: <span id="memoryPercent">0</span>%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="memory-details">
+                    <span id="usedMemory">0</span> GB / <span id="totalMemory">0</span> GB
+                </div>
+            </div>
+            
+            <div class="card processes-card">
+                <h2>Top Processes</h2>
+                <div class="process-search">
+                    <input type="text" id="processSearch" placeholder="Search processes...">
+                    <button id="refreshProcesses">Refresh</button>
+                </div>
+                <div class="process-list-container">
+                    <table class="process-list" id="processList">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>CPU %</th>
+                                <th>Memory %</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Processes will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</body>
+</html>

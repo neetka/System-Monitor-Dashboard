@@ -1,0 +1,217 @@
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --dark-color: #2c3e50;
+    --light-color: #ecf0f1;
+    --gray-color: #bdc3c7;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f5f7fa;
+    color: var(--text-color);
+    padding: 20px;
+}
+
+.dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card h2 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    color: var(--dark-color);
+    font-weight: 500;
+}
+
+.time-card {
+    grid-column: span 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.time-display {
+    font-size: 2rem;
+    font-weight: 300;
+}
+
+.gauge-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.gauge {
+    width: 200px;
+    height: 200px;
+    position: relative;
+}
+
+.gauge-body {
+    width: 100%;
+    height: 100%;
+    background-color: #f5f5f5;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gauge-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: conic-gradient(var(--primary-color) 0%, var(--primary-color) 0%, #f5f5f5 0%);
+    transform: rotate(0deg);
+    transform-origin: center;
+    transition: transform 0.5s ease;
+}
+
+.gauge-cover {
+    width: 75%;
+    height: 75%;
+    background-color: var(--card-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 500;
+    z-index: 1;
+}
+
+.memory-details {
+    text-align: center;
+    font-size: 1rem;
+    color: var(--dark-color);
+    margin-top: 10px;
+}
+
+.processes-card {
+    grid-column: span 2;
+}
+
+.process-search {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.process-search input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid var(--gray-color);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.process-search button {
+    margin-left: 10px;
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.process-search button:hover {
+    background-color: #2980b9;
+}
+
+.process-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.process-list {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.process-list th {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+}
+
+.process-list td {
+    padding: 10px;
+    border-bottom: 1px solid var(--gray-color);
+}
+
+.process-list tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.process-list tr:hover {
+    background-color: #f1f1f1;
+}
+
+.kill-btn {
+    padding: 5px 10px;
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.kill-btn:hover {
+    background-color: #c0392b;
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .processes-card {
+        grid-column: span 1;
+    }
+}
