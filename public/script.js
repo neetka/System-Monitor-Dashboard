@@ -112,58 +112,57 @@ let cpuChart, cpuData = Array(30).fill(0);
       });
   
       document.getElementById('theme-toggle').addEventListener('click', () => {
-  const body = document.body;
-  const light = '#f0f2f5';
-  const dark = '#1a1a2e';
-  
-  // Get computed style instead of inline style
-  const currentBg = window.getComputedStyle(body).backgroundColor;
-  const isDarkMode = currentBg === 'rgb(26, 26, 46)' || currentBg === '#1a1a2e';
-  
-  // Toggle to the opposite theme
-  const newTheme = isDarkMode ? light : dark;
-  body.style.background = newTheme;
-  body.style.color = newTheme === light ? '#333' : '#e0e0e0';
-  
-  document.querySelectorAll('.section').forEach(el => {
-    el.style.background = newTheme === light ? '#f8f9fa' : '#16213e';
-  });
-  
-  document.getElementById('theme-toggle').textContent = newTheme === dark ? 'Toggle Light Mode' : 'Toggle Dark Mode';
-});
-  
-      document.getElementById('auto-refresh-btn').addEventListener('click', () => {
-        autoRefresh = !autoRefresh;
-        document.getElementById('auto-refresh-btn').textContent = `Auto-Refresh: ${autoRefresh ? 'On' : 'Off'}`;
-        if (autoRefresh) {
-          refreshIntervalId = setInterval(fetchData, refreshInterval);
-        } else {
-          clearInterval(refreshIntervalId);
-        }
+        const body = document.body;
+        const light = '#f0f2f5';
+        const dark = '#1a1a2e';
+        
+        // Get computed style instead of inline style
+        const currentBg = window.getComputedStyle(body).backgroundColor;
+        const isDarkMode = currentBg === 'rgb(26, 26, 46)' || currentBg === '#1a1a2e';
+        
+        // Toggle to the opposite theme
+        const newTheme = isDarkMode ? light : dark;
+        body.style.background = newTheme;
+        body.style.color = newTheme === light ? '#333' : '#e0e0e0';
+        
+        document.querySelectorAll('.section').forEach(el => {
+          el.style.background = newTheme === light ? '#f8f9fa' : '#16213e';
+        });
+        
+        document.getElementById('theme-toggle').textContent = newTheme === dark ? 'Toggle Light Mode' : 'Toggle Dark Mode';
       });
-  
-      document.getElementById('refresh-interval').addEventListener('input', (e) => {
-        refreshInterval = e.target.value * 1000;
-        if (autoRefresh) {
-          clearInterval(refreshIntervalId);
-          refreshIntervalId = setInterval(fetchData, refreshInterval);
-        }
-      });
-  
-      document.getElementById('export-btn').addEventListener('click', async () => {
-        const statsRes = await fetch('http://localhost:3000/system-stats');
-        const procRes = await fetch('http://localhost:3000/processes');
-        const stats = await statsRes.json();
-        const processes = await procRes.json();
-        const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify({ stats, processes }, null, 2))}`;
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute('href', dataStr);
-        downloadAnchorNode.setAttribute('download', `system-stats-${new Date().toISOString()}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        document.body.removeChild(downloadAnchorNode);
-      });
-  
+        
+            document.getElementById('auto-refresh-btn').addEventListener('click', () => {
+              autoRefresh = !autoRefresh;
+              document.getElementById('auto-refresh-btn').textContent = `Auto-Refresh: ${autoRefresh ? 'On' : 'Off'}`;
+              if (autoRefresh) {
+                refreshIntervalId = setInterval(fetchData, refreshInterval);
+              } else {
+                clearInterval(refreshIntervalId);
+              }
+            });
+        
+            document.getElementById('refresh-interval').addEventListener('input', (e) => {
+              refreshInterval = e.target.value * 1000;
+              if (autoRefresh) {
+                clearInterval(refreshIntervalId);
+                refreshIntervalId = setInterval(fetchData, refreshInterval);
+              }
+            });
+        
+            document.getElementById('export-btn').addEventListener('click', async () => {
+              const statsRes = await fetch('http://localhost:3000/system-stats');
+              const procRes = await fetch('http://localhost:3000/processes');
+              const stats = await statsRes.json();
+              const processes = await procRes.json();
+              const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify({ stats, processes }, null, 2))}`;
+              const downloadAnchorNode = document.createElement('a');
+              downloadAnchorNode.setAttribute('href', dataStr);
+              downloadAnchorNode.setAttribute('download', `system-stats-${new Date().toISOString()}.json`);
+              document.body.appendChild(downloadAnchorNode);
+              downloadAnchorNode.click();
+              document.body.removeChild(downloadAnchorNode);
+            });
       document.getElementById('search-process').addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase();
         const processItems = document.querySelectorAll('.process-item');
