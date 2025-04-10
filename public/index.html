@@ -11,7 +11,13 @@
     <div class="dashboard">
         <header>
             <h1>Advanced System Monitor</h1>
-        </header>
+            <div class="controls">
+              <button id="theme-toggle">Toggle Light Mode</button>
+              <button id="export-btn">Export Data</button>
+              <button id="auto-refresh-btn">Auto-Refresh: On</button>
+              <input type="range" id="refresh-interval" min="1" max="10" value="2">
+            </div>
+          </header>
         
         <div class="dashboard-grid">
             <div class="card time-card">
