@@ -6,76 +6,59 @@
     <title>Advanced System Monitor</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <div class="dashboard">
+    <div class="container">
         <header>
-            <h1>Advanced System Monitor</h1>
-            <div class="controls">
-              <button id="theme-toggle">Toggle Light Mode</button>
-              <button id="export-btn">Export Data</button>
-              <button id="auto-refresh-btn">Auto-Refresh: On</button>
-              <input type="range" id="refresh-interval" min="1" max="10" value="2">
+          <h1>Advanced System Monitor</h1>
+          <div class="controls">
+            <button id="theme-toggle">Toggle Light Mode</button>
+            <button id="export-btn">Export Data</button>
+            <button id="auto-refresh-btn">Auto-Refresh: On</button>
+            <input type="range" id="refresh-interval" min="1" max="10" value="2">
+          </div>
+        </header>
+        <div class="dashboard">
+          <div class="section">
+            <h2>Current Time</h2>
+            <p id="current-time" style="color: #ffca3a;">Loading...</p>
+          </div>
+          <div class="section">
+            <h2>CPU Usage</h2>
+            <div class="chart-container">
+              <canvas id="cpuChart"></canvas>
             </div>
-          </header>
-        
-        <div class="dashboard-grid">
-            <div class="card time-card">
-                <h2>Current Time</h2>
-                <div class="time-display" id="currentTime">Loading...</div>
+            <div class="cpu-stats">CPU: <span id="cpu-value">0%</span></div>
+          </div>
+          <div class="section">
+            <h2>Memory Usage</h2>
+            <div class="memory-gauge">
+              <div class="gauge-bg"></div>
+              <div class="gauge-fill" id="gauge-fill"></div>
+              <div class="gauge-text" id="memory-value">0 / 0 GB</div>
             </div>
-            
-            <div class="card cpu-card">
-                <h2>CPU Usage</h2>
-                <div class="gauge-container">
-                    <div class="gauge" id="cpuGauge">
-                        <div class="gauge-body">
-                            <div class="gauge-fill" id="cpuFill"></div>
-                            <div class="gauge-cover">CPU: <span id="cpuPercent">0</span>%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card memory-card">
-                <h2>Memory Usage</h2>
-                <div class="gauge-container">
-                    <div class="gauge" id="memoryGauge">
-                        <div class="gauge-body">
-                            <div class="gauge-fill" id="memoryFill"></div>
-                            <div class="gauge-cover">MEM: <span id="memoryPercent">0</span>%</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="memory-details">
-                    <span id="usedMemory">0</span> GB / <span id="totalMemory">0</span> GB
-                </div>
-            </div>
-            
-            <div class="card processes-card">
-                <h2>Top Processes</h2>
-                <div class="process-search">
-                    <input type="text" id="processSearch" placeholder="Search processes...">
-                    <button id="refreshProcesses">Refresh</button>
-                </div>
-                <div class="process-list-container">
-                    <table class="process-list" id="processList">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>CPU %</th>
-                                <th>Memory %</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Processes will be inserted here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+          </div>
+          
+          <div class="section">
+            <h2>Top Processes</h2>
+            <input type="text" id="search-process" placeholder="Search processes...">
+            <div class="process-list" id="process-list"></div>
+          </div>
         </div>
-    </div>
+      </div>
+      <div id="modal">
+        <div class="modal-content">
+          <h3>Process Details</h3>
+          <p id="modal-pid"></p>
+          <p>CPU History: <span id="cpu-history"></span></p>
+          <p>Memory Trend: <span id="memory-trend"></span></p>
+          <button id="confirm-btn">Kill</button>
+          <button id="cancel-btn">Close</button>
+        </div>
+      </div>
+      <div id="notification" class="notification"></div>
     
     <script src="script.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
