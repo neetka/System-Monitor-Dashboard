@@ -1,168 +1,103 @@
 const express = require('express');
-const os = require('os');
-const ps = require('ps-node');
 const cors = require('cors');
 const si = require('systeminformation');
-const http = require('http');
-const { Server } = require('socket.io');
+const os = require('os');
+const pidusage = require('pidusage');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost", // Update with your frontend URL
-    methods: ["GET", "POST"]
-  }
-});
+const port = 3000;
 
-const PORT = 3000;
-
-// Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.static('public'));
 
-// Real-time data interval (in ms)
-const UPDATE_INTERVAL = 2000;
-
-// Store connected clients
-const clients = new Set();
-
-// Helper functions
-async function getProcessList() {
-  return new Promise((resolve, reject) => {
-    ps.lookup({}, (err, resultList) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      const processes = resultList.map(process => ({
-        pid: process.pid,
-        name: process.command || process.arguments[0],
-        memory: (process.memory / (1024 * 1024)).toFixed(2),
-        cpu: process.cpu ? process.cpu.toFixed(2) : '0.00'
-      }));
-
-      // Sort by memory usage (descending)
-      processes.sort((a, b) => parseFloat(b.memory) - parseFloat(a.memory));
-
-      resolve(processes.slice(0, 50)); // Return top 50 processes
-    });
-  });
+// Helper function to get process details
+async function getProcessDetails(pid) {
+    try {
+        const stats = await pidusage(pid);
+        return {
+            cpu: stats.cpu.toFixed(1),
+            memory: (stats.memory / 1024 / 1024).toFixed(2), // Convert to MB
+            elapsed: stats.elapsed
+        };
+    } catch (error) {
+        console.error(`Error getting process details for PID ${pid}:`, error);
+        return null;
+    }
 }
 
-async function getSystemStats() {
-  try {
-    // Get CPU usage
-    const cpuUsage = await new Promise((resolve) => {
-      si.currentLoad().then(data => resolve(data.currentload.toFixed(2)));
-    });
-
-    // Get memory info
-    const memInfo = os.freemem() / (1024 * 1024 * 1024); // in GB
-    const totalMem = os.totalmem() / (1024 * 1024 * 1024); // in GB
-    const usedMem = totalMem - memInfo;
-
-    return {
-      cpu: cpuUsage,
-      memory: {
-        free: memInfo.toFixed(2),
-        used: usedMem.toFixed(2),
-        total: totalMem.toFixed(2)
-      },
-      uptime: os.uptime(),
-      platform: os.platform(),
-      hostname: os.hostname(),
-      timestamp: Date.now()
-    };
-  } catch (error) {
-    console.error('Error getting system stats:', error);
-    throw error;
-  }
-}
-
-// Broadcast system data to all connected clients
-async function broadcastSystemData() {
-  if (clients.size === 0) return;
-
-  try {
-    const [stats, processes] = await Promise.all([
-      getSystemStats(),
-      getProcessList()
-    ]);
-
-    io.emit('system-update', {
-      stats,
-      processes,
-      timestamp: Date.now()
-    });
-  } catch (error) {
-    console.error('Error broadcasting system data:', error);
-  }
-}
-
-// Set up periodic updates
-let updateInterval = setInterval(broadcastSystemData, UPDATE_INTERVAL);
-
-// Routes
+// Get system statistics
 app.get('/system-stats', async (req, res) => {
-  try {
-    const stats = await getSystemStats();
-    res.json(stats);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get system stats' });
-  }
+    try {
+        const [cpu, mem, currentLoad] = await Promise.all([
+            si.currentLoad(),
+            si.mem(),
+            si.currentLoad()
+        ]);
+
+        // Fix memory calculations
+        const totalMemory = Number((mem.total / 1024 / 1024 / 1024).toFixed(2));
+        const usedMemory = Number(((mem.total - mem.available) / 1024 / 1024 / 1024).toFixed(2));
+        const availableMemory = Number((mem.available / 1024 / 1024 / 1024).toFixed(2));
+
+        // Ensure memory values are consistent
+        const stats = {
+            cpu: Number(cpu.currentLoad.toFixed(1)),
+            memory: {
+                total: totalMemory,
+                used: totalMemory - availableMemory, // Fix used memory calculation
+                available: availableMemory,
+                percentage: Math.round(((totalMemory - availableMemory) / totalMemory) * 100)
+            },
+            load: Number(os.loadavg()[0].toFixed(2)),
+            uptime: os.uptime(),
+            activeProcesses: currentLoad.cpus.length
+        };
+
+        res.json(stats);
+    } catch (error) {
+        console.error('Error getting system stats:', error);
+        res.status(500).json({ error: 'Failed to get system statistics' });
+    }
 });
 
+// Get process list
 app.get('/processes', async (req, res) => {
-  try {
-    const processes = await getProcessList();
-    res.json(processes);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get process list' });
-  }
+    try {
+        const processes = await si.processes();
+        const detailedProcesses = await Promise.all(
+            processes.list
+                .slice(0, 20) // Get top 20 processes
+                .map(async (proc) => {
+                    const details = await getProcessDetails(proc.pid);
+                    return {
+                        pid: proc.pid,
+                        name: proc.name,
+                        cpu: details ? details.cpu : 0,
+                        memory: details ? details.memory : 0
+                    };
+                })
+        );
+
+        res.json(detailedProcesses.filter(p => p.cpu > 0 || p.memory > 0));
+    } catch (error) {
+        console.error('Error getting process list:', error);
+        res.status(500).json({ error: 'Failed to get process list' });
+    }
 });
 
-app.post('/kill/:pid', (req, res) => {
-  const pid = req.params.pid;
-  
-  if (!pid || isNaN(pid)) {
-    return res.status(400).json({ error: 'Invalid PID' });
-  }
-
-  try {
-    process.kill(pid, 'SIGTERM');
-    // Broadcast update after killing process
-    broadcastSystemData();
-    res.json({ success: true, message: `Process ${pid} terminated` });
-  } catch (error) {
-    console.error(`Error killing process ${pid}:`, error);
-    res.status(500).json({ error: `Failed to kill process ${pid}` });
-  }
+// Kill a process
+app.post('/kill/:pid', async (req, res) => {
+    const pid = parseInt(req.params.pid);
+    
+    try {
+        process.kill(pid);
+        res.json({ success: true, message: `Process ${pid} terminated` });
+    } catch (error) {
+        console.error(`Error killing process ${pid}:`, error);
+        res.status(500).json({ error: `Failed to terminate process ${pid}` });
+    }
 });
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log('New client connected');
-  clients.add(socket.id);
-
-  // Send initial data immediately
-  broadcastSystemData();
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
-    clients.delete(socket.id);
-  });
-
-  socket.on('set-update-interval', (interval) => {
-    clearInterval(updateInterval);
-    UPDATE_INTERVAL = interval;
-    updateInterval = setInterval(broadcastSystemData, UPDATE_INTERVAL);
-    console.log(`Update interval changed to ${interval}ms`);
-  });
-});
-
-// Start server
-server.listen(PORT, () => {
-  console.log(`Real-time System Monitor API running on http://localhost:${PORT}`);
+app.listen(port, () => {
+    console.log(`System monitor server running at http://localhost:${port}`);
 });
