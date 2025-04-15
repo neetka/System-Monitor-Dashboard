@@ -28,29 +28,23 @@ async function getProcessDetails(pid) {
 // Get system statistics
 app.get('/system-stats', async (req, res) => {
     try {
-        const [cpu, mem, currentLoad] = await Promise.all([
+        const [cpu, mem, processes] = await Promise.all([
             si.currentLoad(),
             si.mem(),
-            si.currentLoad()
+            si.processes()
         ]);
 
-        // Fix memory calculations
-        const totalMemory = Number((mem.total / 1024 / 1024 / 1024).toFixed(2));
-        const usedMemory = Number(((mem.total - mem.available) / 1024 / 1024 / 1024).toFixed(2));
-        const availableMemory = Number((mem.available / 1024 / 1024 / 1024).toFixed(2));
-
-        // Ensure memory values are consistent
         const stats = {
             cpu: Number(cpu.currentLoad.toFixed(1)),
             memory: {
-                total: totalMemory,
-                used: totalMemory - availableMemory, // Fix used memory calculation
-                available: availableMemory,
-                percentage: Math.round(((totalMemory - availableMemory) / totalMemory) * 100)
+                total: Number((mem.total / 1024 / 1024 / 1024).toFixed(2)),
+                used: Number(((mem.total - mem.available) / 1024 / 1024 / 1024).toFixed(2)),
+                available: Number((mem.available / 1024 / 1024 / 1024).toFixed(2)),
+                percentage: Math.round(((mem.total - mem.available) / mem.total) * 100)
             },
             load: Number(os.loadavg()[0].toFixed(2)),
             uptime: os.uptime(),
-            activeProcesses: currentLoad.cpus.length
+            activeProcesses: processes.running || processes.all || 0  // Get running processes count
         };
 
         res.json(stats);
