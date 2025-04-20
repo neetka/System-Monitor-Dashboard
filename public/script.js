@@ -143,39 +143,51 @@ function formatUptime(seconds) {
 }
 
 function updateProcessList(processes) {
+    console.log('Updating process list with', processes.length, 'processes');
     const processList = document.getElementById('process-list');
-    processList.innerHTML = processes.map(proc => `
-        <div class="process-item" onclick="showModal('${proc.pid}', ${proc.cpu}, ${proc.memory})">
-            <div class="process-icon">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 2L14 5V11L8 14L2 11V5L8 2Z" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-            </div>
-            <div class="process-info">
-                <span class="process-name">${proc.name}</span>
-                <span class="process-details">PID: ${proc.pid}</span>
-            </div>
-            <div class="process-stats">
-                <span class="stat ${proc.cpu > 80 ? 'resource-critical' : proc.cpu > 50 ? 'resource-warning' : ''}">
-                    <svg class="stat-icon" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 14V2M14 14V2M6 14V2M10 14V2" stroke="currentColor" stroke-width="1.5"/>
+    processList.innerHTML = processes.map(proc => {
+        if (!proc) return '';
+        return `
+            <div class="process-item" onclick="showModal('${proc.pid}', ${proc.cpu}, ${proc.memory})">
+                <div class="process-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 2L14 5V11L8 14L2 11V5L8 2Z" stroke="currentColor" stroke-width="1.5"/>
                     </svg>
-                    ${proc.cpu}%
-                </span>
-                <span class="stat">
-                    <svg class="stat-icon" viewBox="0 0 16 16" fill="none">
-                        <path d="M2 14H14M8 2V10" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>
-                    ${proc.memory} MB
-                </span>
+                </div>
+                <div class="process-info">
+                    <span class="process-name">${proc.name}</span>
+                    <span class="process-details">PID: ${proc.pid}</span>
+                    <span class="process-details">Priority: ${proc.priority || 'normal'}</span>
+                </div>
+                <div class="process-stats">
+                    <span class="stat ${proc.cpu > 80 ? 'resource-critical' : proc.cpu > 50 ? 'resource-warning' : ''}">
+                        <svg class="stat-icon" viewBox="0 0 16 16" fill="none">
+                            <path d="M2 14V2M14 14V2M6 14V2M10 14V2" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        ${proc.cpu}%
+                    </span>
+                    <span class="stat">
+                        <svg class="stat-icon" viewBox="0 0 16 16" fill="none">
+                            <path d="M2 14H14M8 2V10" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                        ${proc.memory} MB
+                    </span>
+                </div>
+                <div class="process-actions">
+                    <button class="priority-btn" onclick="showPriorityModal('${proc.pid}', event)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2L14 5V11L8 14L2 11V5L8 2Z" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </button>
+                    <button class="kill-btn" onclick="showKillModal('${proc.pid}', event)">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.5"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
-            <button class="kill-btn" onclick="showKillModal('${proc.pid}', event)">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.5"/>
-                </svg>
-            </button>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function showNotification(message) {
@@ -207,6 +219,53 @@ function showKillModal(pid, event) {
     document.getElementById('modal').style.display = 'flex';
 }
 
+function showPriorityModal(pid, event) {
+    event.stopPropagation();
+    currentPid = pid;
+    
+    const modal = document.getElementById('modal');
+    const modalContent = modal.querySelector('.modal-content');
+    
+    modalContent.innerHTML = `
+        <h3>Change Process Priority</h3>
+        <div class="modal-process-info">
+            <p><strong>PID:</strong> ${pid}</p>
+            <div class="priority-controls">
+                <label for="priority-level">Priority Level:</label>
+                <select id="priority-level">
+                    <option value="high">High</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button id="cancel-btn">Cancel</button>
+            <button id="confirm-btn">Set Priority</button>
+        </div>
+    `;
+    
+    modal.style.display = 'flex';
+    
+    // Add event listeners for the new buttons
+    modal.querySelector('#cancel-btn').addEventListener('click', () => {
+        modal.style.display = 'none';
+        currentPid = null;
+    });
+    
+    modal.querySelector('#confirm-btn').addEventListener('click', async () => {
+        const priority = modal.querySelector('#priority-level').value;
+        try {
+            await setProcessPriority(pid, priority);
+            modal.style.display = 'none';
+            currentPid = null;
+        } catch (error) {
+            console.error('Error setting priority:', error);
+            showNotification(`Error setting priority: ${error.message}`);
+        }
+    });
+}
+
 async function killProcess(pid) {
     try {
         const response = await fetch(`http://localhost:3000/kill/${pid}`, {
@@ -224,6 +283,38 @@ async function killProcess(pid) {
     } catch (error) {
         console.error('Error killing process:', error);
         showNotification(`Error terminating process: ${error.message}`);
+    }
+}
+
+async function setProcessPriority(pid, priority) {
+    try {
+        console.log(`Setting priority for PID ${pid} to ${priority}`);
+        const response = await fetch(`http://localhost:3000/process/${pid}/priority`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ priority })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Priority change result:', result);
+        showNotification(result.message);
+        
+        // Force a refresh of the process list
+        console.log('Refreshing process list...');
+        await fetchData();
+        
+        return result;
+    } catch (error) {
+        console.error('Error setting priority:', error);
+        showNotification(`Error: ${error.message}`);
+        throw error;
     }
 }
 
