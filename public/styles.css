@@ -474,12 +474,13 @@ header h1 {
 
 .process-name {
   font-weight: 500;
-  color: #e2e8f0;
+  color: var(--text-color);
 }
 
 .process-details {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-color);
+  opacity: 0.8;
 }
 
 .process-stats {
@@ -493,7 +494,8 @@ header h1 {
   align-items: center;
   gap: 4px;
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-color);
+  opacity: 0.8;
 }
 
 .stat-icon {

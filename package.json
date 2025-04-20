@@ -16,6 +16,7 @@
     "or": "^0.2.0",
     "os-utils": "^0.0.14",
     "pidusage": "^4.0.0",
+    "ps-node": "^0.1.6",
     "react-icons": "^5.5.0",
     "systeminformation": "^5.25.11"
   },

@@ -26,12 +26,7 @@
             <div class="summary-card">
               <span class="summary-title">System Load</span>
               <span class="summary-value" id="system-load">0.00</span>
-              <span class="trend-indicator trend-up">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 4L12 8L4 8L8 4Z" fill="currentColor"/>
-                </svg>
-                <span>2.3%</span>
-              </span>
+              
             </div>
             <div class="summary-card">
               <span class="summary-title">Active Processes</span>
@@ -45,9 +40,9 @@
         </div>
 
         <div class="metrics-grid">
-          <div class="section">
+        <div class="section">
             <div class="chart-header">
-              <h2>CPU Usage</h2>
+          <h2>CPU Usage</h2>
               <div class="chart-legend">
                 <div class="legend-item">
                   <div class="legend-color" style="background: #60a5fa;"></div>
@@ -59,20 +54,20 @@
                 </div>
               </div>
             </div>
-            <div class="chart-container">
-              <canvas id="cpuChart"></canvas>
-            </div>
+          <div class="chart-container">
+            <canvas id="cpuChart"></canvas>
+          </div>
             <div class="metrics-card">
               <div>
                 <div class="metric-value" id="cpu-value">0%</div>
                 <div class="metric-label">Current Usage</div>
               </div>
-            </div>
+        </div>
           </div>
 
-          <div class="section">
+        <div class="section">
             <div class="chart-header">
-              <h2>Memory Usage</h2>
+            <h2>Memory Usage</h2>
               <div class="chart-legend">
                 <div class="legend-item">
                   <div class="legend-color" style="background: #60a5fa;"></div>
@@ -98,8 +93,8 @@
               </div>
             </div>
           </div>
-        </div>
-
+          </div>
+          
         <div class="section">
           <h2>Top Processes</h2>
           <input type="text" id="search-process" placeholder="Search processes by name, PID, or resource usage...">
