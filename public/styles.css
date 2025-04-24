@@ -182,8 +182,46 @@ header h1 {
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 8px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.pagination-controls button {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
 .process-list {
-  max-height: 400px;
+  max-height: 600px;
   overflow-y: auto;
   padding-right: 8px;
 }
@@ -207,10 +245,10 @@ header h1 {
   grid-template-columns: auto 1fr auto auto;
   gap: 16px;
   align-items: center;
-  padding: 16px;
+  padding: 12px;
   background: var(--process-bg);
   margin: 8px 0;
-  border-radius: 12px;
+  border-radius: 8px;
   transition: all 0.2s;
   border: 1px solid var(--border-color);
 }
@@ -358,27 +396,39 @@ header h1 {
   position: fixed;
   top: 24px;
   right: 24px;
-  background: var(--notification-bg);
-  color: white;
   padding: 16px 24px;
   border-radius: 12px;
   display: none;
   z-index: 1000;
-  animation: slideIn 0.5s ease, fadeOut 0.5s ease 3s forwards;
+  animation: slideIn 0.5s ease;
   backdrop-filter: blur(8px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.notification.show {
-  display: block;
+  font-weight: 500;
+  min-width: 300px;
+  text-align: center;
 }
 
 .notification.success {
-  background: var(--notification-success);
+  background: rgba(16, 185, 129, 0.95);  /* Green background */
+  color: white;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .notification.error {
-  background: var(--notification-error);
+  background: rgba(239, 68, 68, 0.95);  /* Red background */
+  color: white;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 #refresh-interval {
@@ -481,6 +531,10 @@ header h1 {
   font-size: 0.85rem;
   color: var(--text-color);
   opacity: 0.8;
+}
+
+.process-details:not(:last-child) {
+  margin-right: 12px;
 }
 
 .process-stats {
@@ -637,4 +691,36 @@ header h1 {
   outline: none;
   border-color: #60a5fa;
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.pause-btn,
+.resume-btn {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 4px;
+}
+
+.pause-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.resume-btn {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.resume-btn:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
 }
