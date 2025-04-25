@@ -7,6 +7,7 @@ let currentPid = null;
 let currentPage = 1;
 const processesPerPage = 50;
 let allProcesses = [];
+let currentFilter = 'all';
 
 function initCharts() {
     // CPU Chart
@@ -148,18 +149,34 @@ function formatUptime(seconds) {
 function updateProcessList(processes) {
     console.log('Updating process list with', processes.length, 'processes');
     allProcesses = processes;
-    renderProcessPage(currentPage);
+    renderProcesses();
 }
 
-function renderProcessPage(page) {
-    const startIndex = (page - 1) * processesPerPage;
-    const endIndex = startIndex + processesPerPage;
-    const pageProcesses = allProcesses.slice(startIndex, endIndex);
-    
+function renderProcesses() {
     const processList = document.getElementById('process-list');
-    processList.innerHTML = pageProcesses.map(proc => {
-        if (!proc) return '';
-        return `
+    const filteredProcesses = allProcesses.filter(proc => {
+        if (!proc) return false;
+        const state = proc.state.toLowerCase();
+        switch (currentFilter) {
+            case 'running':
+                return state.includes('running');
+            case 'sleeping':
+                return state.includes('sleeping');
+            case 'stopped':
+                return state.includes('stopped');
+            default:
+                return true; // 'all' filter
+        }
+    });
+
+    processList.innerHTML = `
+        <div class="process-filters">
+            <button class="filter-btn ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">All</button>
+            <button class="filter-btn ${currentFilter === 'running' ? 'active' : ''}" data-filter="running">Running</button>
+            <button class="filter-btn ${currentFilter === 'sleeping' ? 'active' : ''}" data-filter="sleeping">Sleeping</button>
+            <button class="filter-btn ${currentFilter === 'stopped' ? 'active' : ''}" data-filter="stopped">Paused</button>
+        </div>
+        ${filteredProcesses.map(proc => `
             <div class="process-item" onclick="showModal('${proc.pid}', ${proc.cpu}, ${proc.memory})">
                 <div class="process-icon">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -200,54 +217,29 @@ function renderProcessPage(page) {
                         </button>` :
                         `<button class="pause-btn" onclick="pauseProcess('${proc.pid}', event)">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M4 2H6V14H4V2Z" stroke="currentColor" stroke-width="1.5"/>
-                                <path d="M10 2H12V14H10V2Z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M4 2V14M12 2V14" stroke="currentColor" stroke-width="1.5"/>
                             </svg>
                         </button>`
                     }
                     <button class="kill-btn" onclick="showKillModal('${proc.pid}', event)">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M2 2L14 14M14 2L2 14" stroke="currentColor" stroke-width="1.5"/>
                         </svg>
                     </button>
                 </div>
             </div>
-        `;
-    }).join('');
-
-    // Update pagination controls
-    updatePaginationControls();
-}
-
-function updatePaginationControls() {
-    const totalPages = Math.ceil(allProcesses.length / processesPerPage);
-    const paginationDiv = document.getElementById('pagination-controls') || createPaginationControls();
-    
-    paginationDiv.innerHTML = `
-        <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-            Previous
-        </button>
-        <span>Page ${currentPage} of ${totalPages}</span>
-        <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-            Next
-        </button>
+        `).join('')}
     `;
-}
 
-function createPaginationControls() {
-    const paginationDiv = document.createElement('div');
-    paginationDiv.id = 'pagination-controls';
-    paginationDiv.className = 'pagination-controls';
-    document.querySelector('.section').appendChild(paginationDiv);
-    return paginationDiv;
-}
-
-function changePage(newPage) {
-    const totalPages = Math.ceil(allProcesses.length / processesPerPage);
-    if (newPage >= 1 && newPage <= totalPages) {
-        currentPage = newPage;
-        renderProcessPage(currentPage);
-    }
+    // Add event listeners for filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            currentFilter = e.target.dataset.filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            renderProcesses();
+        });
+    });
 }
 
 function showNotification(message, type = 'error') {
@@ -608,3 +600,36 @@ document.getElementById('confirm-btn').addEventListener('click', async function(
     document.getElementById('modal').style.display = 'none';
     currentPid = null;
 });
+
+// Add this to your existing styles in public/styles.css
+document.head.insertAdjacentHTML('beforeend', `
+    <style>
+        .process-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-btn.active {
+            background: #60a5fa;
+            color: #fff;
+        }
+    </style>
+`);

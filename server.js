@@ -85,7 +85,7 @@ app.get('/processes', async (req, res) => {
         console.log('Fetching process list...');
         
         // macOS specific ps command with state filter
-        exec('ps -ax -o pid,state,pri,comm', async (error, stdout, stderr) => {
+        exec('ps -ax -o pid,state,nice,comm', async (error, stdout, stderr) => {
             if (error) {
                 console.error('Error getting process list:', error);
                 return res.status(500).json({ error: 'Failed to get process list' });
@@ -101,20 +101,20 @@ app.get('/processes', async (req, res) => {
                     // Handle cases where comm (name) might contain spaces
                     const pid = parts[0];
                     const state = parts[1];
-                    const priority = parts[2];
+                    const nice = parts[2];
                     const name = parts.slice(3).join(' '); // Join remaining parts as name
 
                     return {
                         pid: parseInt(pid),
                         state: getMacProcessState(state), // Convert macOS state code to readable format
-                        priority: parseInt(priority),
+                        priority: parseInt(nice), // Now using nice value directly
                         name: name.split('/').pop() // Get just the process name without path
                     };
                 })
                 .filter(proc => {
-                    // Filter for only running processes
+                    // Filter for running, sleeping, and paused processes
                     const state = proc.state.toLowerCase();
-                    return state.includes('running') || state.includes('sleeping');
+                    return state.includes('running') || state.includes('sleeping') || state.includes('stopped');
                 });
 
             // Get additional details for each process
@@ -138,7 +138,7 @@ app.get('/processes', async (req, res) => {
 
             // Filter out null processes and sort by CPU usage
             const validProcesses = detailedProcesses
-                .filter(p => p !== null && p.cpu > 0) // Only include processes with CPU usage
+                .filter(p => p !== null) // Only filter out null processes
                 .sort((a, b) => b.cpu - a.cpu);
 
             console.log(`Returning ${validProcesses.length} valid running processes`);
