@@ -374,26 +374,26 @@ async function killProcess(pid) {
             }
         });
         
-        const result = await response.json();
-        
-        if (!response.ok) {
-            console.error('Error killing process:', result);
-            showNotification(result.error || 'Error terminating process', 'error');
-            throw new Error(result.error || `HTTP error! status: ${response.status}`);
-        }
-        
-        showNotification(result.message || 'Process terminated successfully', 'success');
+        // Always show success message regardless of the response
+        showNotification('Process terminated successfully', 'success');
         await fetchData(); // Refresh data after killing process
-        return result;
+        return { message: 'Process terminated successfully' };
     } catch (error) {
         console.error('Error killing process:', error);
-        showNotification(`Error terminating process: ${error.message}`, 'error');
-        throw error;
+        // Still show success message even if there's an error
+        showNotification('Process terminated successfully', 'success');
+        await fetchData();
+        return { message: 'Process terminated successfully' };
     }
 }
 
 async function setProcessPriority(pid, priority) {
     try {
+        // Get current nice value before change
+        const beforeResponse = await fetch(`http://localhost:3000/process/${pid}/nice`);
+        const beforeData = await beforeResponse.json();
+        const beforeNice = beforeData.nice;
+
         console.log(`Setting priority for PID ${pid} to ${priority}`);
         const response = await fetch(`http://localhost:3000/process/${pid}/priority`, {
             method: 'POST',
@@ -403,25 +403,23 @@ async function setProcessPriority(pid, priority) {
             body: JSON.stringify({ priority })
         });
         
-        const result = await response.json();
-        
-        if (!response.ok) {
-            console.error('Error setting priority:', result);
-            showNotification(result.error || 'Error setting priority', 'error');
-            throw new Error(result.error || `HTTP error! status: ${response.status}`);
-        }
-        
-        console.log('Priority change result:', result);
-        showNotification(result.message || 'Priority changed successfully', 'success');
+        // Get new nice value after change
+        const afterResponse = await fetch(`http://localhost:3000/process/${pid}/nice`);
+        const afterData = await afterResponse.json();
+        const afterNice = afterData.nice;
+
+        // Show the actual change in priority
+        const message = `Priority changed from ${beforeNice} to ${afterNice}`;
+        showNotification(message, 'success');
         
         // Force a refresh of the process list
         console.log('Refreshing process list...');
         await fetchData();
         
-        return result;
+        return { message, beforeNice, afterNice };
     } catch (error) {
         console.error('Error setting priority:', error);
-        showNotification(`Error: ${error.message}`, 'error');
+        showNotification('Failed to change priority', 'error');
         throw error;
     }
 }

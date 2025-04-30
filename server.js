@@ -112,7 +112,7 @@ app.get('/processes', async (req, res) => {
                     };
                 })
                 .filter(proc => {
-                    // Filter for running, sleeping, and paused processes
+                    // Filter for running, sleeping, and stopped processes
                     const state = proc.state.toLowerCase();
                     return state.includes('running') || state.includes('sleeping') || state.includes('stopped');
                 });
@@ -315,7 +315,6 @@ app.post('/process/:pid/priority', (req, res) => {
             });
         }
 
-        // Construct the command based on priority level
         let command;
         if (priority === 'high') {
             // For high priority, we'll use sudo
@@ -517,6 +516,51 @@ app.post('/process/:pid/resume', (req, res) => {
             success: false,
             error: 'Internal server error',
             details: error.message
+        });
+    }
+});
+
+// Get process nice value
+app.get('/process/:pid/nice', (req, res) => {
+    const pid = parseInt(req.params.pid);
+    
+    if (!pid) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid PID provided'
+        });
+    }
+
+    try {
+        console.log(`Getting nice value for PID ${pid}`);
+        
+        // Use ps command to get nice value
+        const command = `ps -o nice -p ${pid}`;
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Failed to get nice value for PID ${pid}:`, error);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to get process nice value',
+                    details: error.message
+                });
+            }
+
+            // Parse the nice value from ps output
+            const niceValue = parseInt(stdout.split('\n')[1].trim());
+            
+            res.json({
+                success: true,
+                pid: pid,
+                nice: niceValue
+            });
+        });
+    } catch (error) {
+        console.error('Error in nice value endpoint:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error',
+            message: error.message
         });
     }
 });

@@ -1,41 +1,43 @@
 # System Monitor Dashboard
 
-A modern, real-time system monitoring dashboard built with Node.js and Chart.js that provides detailed insights into your system's performance.
-
-![System Monitor Dashboard](screenshot.png)
+A modern, real-time system monitoring dashboard built with Node.js that provides detailed insights into your system's performance. This dashboard offers a beautiful and intuitive interface for monitoring system resources and managing processes on macOS.
 
 ## Features
 
-- **Real-time Monitoring**
-  - CPU usage tracking with historical data
-  - Memory usage visualization with used/available breakdown
+- **Real-time System Monitoring**
+  - CPU usage tracking with historical data visualization
+  - Memory usage monitoring with used/available breakdown
   - System load and active processes counter
   - System uptime display
+  - Current time display
 
 - **Process Management**
-  - List of top processes with resource usage
+  - Comprehensive process list with detailed information
   - Process search functionality
-  - Ability to terminate processes
-  - Detailed process information modal
+  - Process termination capability
+  - Process priority adjustment (high, normal, low)
+  - Process state monitoring (running, sleeping, etc.)
+  - CPU and memory usage per process
 
 - **User Interface**
-  - Modern, responsive design
-  - Dark/Light theme toggle
-  - Interactive charts and visualizations
+  - Modern, responsive design with dark/light theme support
+  - Interactive charts using Chart.js
   - Real-time updates with configurable refresh rate
   - System notifications for high resource usage
+  - Export functionality for system statistics
 
 ## Prerequisites
 
 - Node.js (v14.0.0 or higher)
 - npm (v6.0.0 or higher)
+- macOS operating system (for process management features)
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/system-monitor-dashboard.git
-cd system-monitor-dashboard
+git clone https://github.com/neetka/System-Monitor-Dashboard.git
+cd System-Monitor-Dashboard
 ```
 
 2. Install dependencies:
@@ -60,33 +62,41 @@ http://localhost:3000
 - Chart.js - Interactive charts
 - pidusage - Process CPU and memory statistics
 - cors - Cross-origin resource sharing
-
-## Configuration
-
-The dashboard comes with default settings that can be modified:
-
-- Default refresh rate: 2 seconds
-- Memory warning threshold: 80%
-- CPU warning threshold: 80%
-- Process list limit: 20 processes
+- ps-node - Process management utilities
 
 ## Usage
 
-### Basic Monitoring
-- View real-time CPU and memory usage
-- Monitor system load and active processes
-- Track system uptime
+### System Monitoring
+- View real-time CPU usage with historical data
+- Monitor memory usage with used/available breakdown
+- Track system load and active processes
+- View system uptime
 
 ### Process Management
 - Search processes using the search bar
-- Click on a process to view detailed information
-- Use the kill button to terminate processes
+- View detailed process information including:
+  - Process ID (PID)
+  - Process state
+  - CPU usage
+  - Memory usage
+  - Priority level
+- Adjust process priority (requires sudo for high priority)
+- Terminate processes
 - Sort processes by resource usage
 
-### Customization
+### Interface Customization
 - Toggle between dark and light themes
 - Adjust the refresh rate using the slider
-- Export system statistics to JSON
+- Export system statistics to JSON format
+
+## API Endpoints
+
+- `GET /system-stats` - Get system statistics
+- `GET /processes` - Get list of running processes
+- `POST /kill/:pid` - Terminate a process
+- `POST /process/:pid/priority` - Change process priority
+- `POST /process/:pid/pause` - Pause a process
+- `POST /process/:pid/resume` - Resume a paused process
 
 ## Contributing
 
